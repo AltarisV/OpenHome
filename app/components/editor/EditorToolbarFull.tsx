@@ -21,6 +21,7 @@ interface EditorToolbarFullProps {
   onToggleRightPanel?: () => void;
   onCollapseLeftPanel: () => void;
   onCollapseRightPanel: () => void;
+  onDeleteAllObjects: () => void;
 }
 
 export default function EditorToolbarFull({
@@ -40,6 +41,7 @@ export default function EditorToolbarFull({
   onToggleRightPanel,
   onCollapseLeftPanel,
   onCollapseRightPanel,
+  onDeleteAllObjects,
 }: EditorToolbarFullProps) {
   return (
     <div className="bg-white border-b border-slate-200 px-2 sm:px-4 py-2 sm:py-2.5 flex items-center gap-1.5 sm:gap-3">
@@ -149,6 +151,22 @@ export default function EditorToolbarFull({
         <span className="text-slate-300">•</span>
         <span>M for measure</span>
       </div>
+
+      {/* Delete All Objects button */}
+      {((appState.objectDefs?.length ?? 0) > 0 || (appState.placedObjects?.length ?? 0) > 0) && (
+        <button
+          onClick={onDeleteAllObjects}
+          className="hidden sm:flex items-center gap-1.5 px-2 sm:px-3 py-1.5 text-xs sm:text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-all"
+          title="Delete all objects"
+        >
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+            <line x1="10" y1="11" x2="10" y2="17"/>
+            <line x1="14" y1="11" x2="14" y2="17"/>
+          </svg>
+          <span className="hidden md:inline">Delete Objects</span>
+        </button>
+      )}
 
       {/* Panel collapse buttons (desktop) */}
       <div className="hidden lg:flex items-center gap-1 ml-2">

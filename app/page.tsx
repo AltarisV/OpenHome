@@ -301,6 +301,11 @@ export default function RoomEditor() {
           onToggleRightPanel={() => setRightPanelOpen(prev => !prev)}
           onCollapseLeftPanel={() => setLeftPanelCollapsed(prev => !prev)}
           onCollapseRightPanel={() => setRightPanelCollapsed(prev => !prev)}
+          onDeleteAllObjects={() => {
+            if (window.confirm('Delete ALL objects? This will remove all placed objects and all object definitions. This cannot be undone.')) {
+              updateState(State.deleteAllObjects(appState));
+            }
+          }}
         />
 
         <div className="relative flex-1 w-full h-full">

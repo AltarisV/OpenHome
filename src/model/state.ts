@@ -132,6 +132,18 @@ export function addObjectDef(state: AppState, name: string, widthCm: number, hei
 }
 
 /**
+ * Delete all objects: both object definitions and placed objects
+ */
+export function deleteAllObjects(state: AppState): AppState {
+  return {
+    ...state,
+    objectDefs: [],
+    placedObjects: [],
+    selectedObjectId: undefined,
+  };
+}
+
+/**
  * Place an object into a room at absolute coordinates (cm)
  */
 export function placeObject(
