@@ -157,16 +157,31 @@ export default function RoomEditor() {
       }
 
       const arrowKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
-      if (arrowKeys.includes(e.key) && appState.selectedRoomIds.length > 0) {
-        e.preventDefault();
-        const amount = e.shiftKey ? NUDGE_AMOUNT_SHIFT : NUDGE_AMOUNT;
-        let dx = 0, dy = 0;
-        if (e.key === 'ArrowUp') dy = -amount;
-        if (e.key === 'ArrowDown') dy = amount;
-        if (e.key === 'ArrowLeft') dx = -amount;
-        if (e.key === 'ArrowRight') dx = amount;
-        updateState(State.nudgeSelectedRooms(appState, dx, dy));
-        return;
+      if (arrowKeys.includes(e.key)) {
+        // Nudge selected object
+        if (appState.selectedObjectId) {
+          e.preventDefault();
+          const amount = e.shiftKey ? NUDGE_AMOUNT_SHIFT : NUDGE_AMOUNT;
+          let dx = 0, dy = 0;
+          if (e.key === 'ArrowUp') dy = -amount;
+          if (e.key === 'ArrowDown') dy = amount;
+          if (e.key === 'ArrowLeft') dx = -amount;
+          if (e.key === 'ArrowRight') dx = amount;
+          updateState(State.nudgeSelectedObject(appState, dx, dy));
+          return;
+        }
+        // Nudge selected rooms
+        if (appState.selectedRoomIds.length > 0) {
+          e.preventDefault();
+          const amount = e.shiftKey ? NUDGE_AMOUNT_SHIFT : NUDGE_AMOUNT;
+          let dx = 0, dy = 0;
+          if (e.key === 'ArrowUp') dy = -amount;
+          if (e.key === 'ArrowDown') dy = amount;
+          if (e.key === 'ArrowLeft') dx = -amount;
+          if (e.key === 'ArrowRight') dx = amount;
+          updateState(State.nudgeSelectedRooms(appState, dx, dy));
+          return;
+        }
       }
 
       if (e.key === 'm' || e.key === 'M') { e.preventDefault(); setToolMode(toolMode === 'measure' ? 'select' : 'measure'); setMeasurePoints([]); return; }

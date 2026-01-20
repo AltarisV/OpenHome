@@ -1,10 +1,22 @@
 'use client';
 
 import React from 'react';
-import { AppState, ExtendedDragState, MeasurePoint, WallSide, WallOpening, Room, ToolMode } from '@/src/model/types';
+import { AppState, ExtendedDragState, MeasurePoint, WallSide, WallOpening, Room, ToolMode, PlacedObject, ObjectDef } from '@/src/model/types';
 import * as State from '@/src/model/state';
 import * as Snap from '@/src/editor/Snap';
 import { SCALE } from '@/app/components/constants/editor';
+
+/** Distance guides for object positioning */
+interface DistanceGuide {
+  direction: 'left' | 'right' | 'top' | 'bottom';
+  distanceCm: number;
+  lineX1: number;
+  lineY1: number;
+  lineX2: number;
+  lineY2: number;
+  labelX: number;
+  labelY: number;
+}
 
 interface SvgCanvasProps {
   appState: AppState;
@@ -35,6 +47,113 @@ type WallRenderData = {
   shouldRender: boolean;
   openingOffset: number;
 };
+
+/** Calculate distance guides from an object to room walls */
+function calculateDistanceGuides(
+  placed: PlacedObject,
+  def: ObjectDef,
+  room: Room,
+  appState: AppState
+): DistanceGuide[] {
+  const guides: DistanceGuide[] = [];
+  
+  // Room inner boundaries
+  const roomLeftCm = room.xCm;
+  const roomTopCm = room.yCm;
+  const roomRightCm = room.xCm + room.widthCm;
+  const roomBottomCm = room.yCm + room.heightCm;
+  
+  // Calculate actual bounding box after rotation
+  // The SVG rotation is around the center of the ORIGINAL (unrotated) rect
+  const originalCenterX = placed.xCm + def.widthCm / 2;
+  const originalCenterY = placed.yCm + def.heightCm / 2;
+  
+  const rotation = ((placed.rotationDeg ?? 0) % 360 + 360) % 360; // Normalize to 0-359
+  const isRotated90or270 = rotation === 90 || rotation === 270;
+  
+  // After rotation, the bounding box changes
+  let boundingWidth: number;
+  let boundingHeight: number;
+  
+  if (isRotated90or270) {
+    // Width and height swap
+    boundingWidth = def.heightCm;
+    boundingHeight = def.widthCm;
+  } else {
+    boundingWidth = def.widthCm;
+    boundingHeight = def.heightCm;
+  }
+  
+  // The center stays the same, but the bounding box corners change
+  const objLeftCm = originalCenterX - boundingWidth / 2;
+  const objTopCm = originalCenterY - boundingHeight / 2;
+  const objRightCm = originalCenterX + boundingWidth / 2;
+  const objBottomCm = originalCenterY + boundingHeight / 2;
+  const objCenterXCm = originalCenterX;
+  const objCenterYCm = originalCenterY;
+  
+  // Distance to left wall (west) - line from object's left edge to wall
+  const distLeft = objLeftCm - roomLeftCm;
+  if (distLeft > 1) { // Only show if > 1cm to avoid clutter
+    guides.push({
+      direction: 'left',
+      distanceCm: distLeft,
+      lineX1: roomLeftCm * SCALE,
+      lineY1: objCenterYCm * SCALE,
+      lineX2: objLeftCm * SCALE,
+      lineY2: objCenterYCm * SCALE,
+      labelX: (roomLeftCm + distLeft / 2) * SCALE,
+      labelY: objCenterYCm * SCALE,
+    });
+  }
+  
+  // Distance to right wall (east) - line from object's right edge to wall
+  const distRight = roomRightCm - objRightCm;
+  if (distRight > 1) {
+    guides.push({
+      direction: 'right',
+      distanceCm: distRight,
+      lineX1: objRightCm * SCALE,
+      lineY1: objCenterYCm * SCALE,
+      lineX2: roomRightCm * SCALE,
+      lineY2: objCenterYCm * SCALE,
+      labelX: (objRightCm + distRight / 2) * SCALE,
+      labelY: objCenterYCm * SCALE,
+    });
+  }
+  
+  // Distance to top wall (north) - line from object's top edge to wall
+  const distTop = objTopCm - roomTopCm;
+  if (distTop > 1) {
+    guides.push({
+      direction: 'top',
+      distanceCm: distTop,
+      lineX1: objCenterXCm * SCALE,
+      lineY1: roomTopCm * SCALE,
+      lineX2: objCenterXCm * SCALE,
+      lineY2: objTopCm * SCALE,
+      labelX: objCenterXCm * SCALE,
+      labelY: (roomTopCm + distTop / 2) * SCALE,
+    });
+  }
+  
+  // Distance to bottom wall (south) - line from object's bottom edge to wall
+  const distBottom = roomBottomCm - objBottomCm;
+  if (distBottom > 1) {
+    guides.push({
+      direction: 'bottom',
+      distanceCm: distBottom,
+      lineX1: objCenterXCm * SCALE,
+      lineY1: objBottomCm * SCALE,
+      lineX2: objCenterXCm * SCALE,
+      lineY2: roomBottomCm * SCALE,
+      labelX: objCenterXCm * SCALE,
+      labelY: (objBottomCm + distBottom / 2) * SCALE,
+    });
+  }
+  
+  return guides;
+}
 
 export default function SvgCanvas({
   appState,
@@ -255,6 +374,9 @@ export default function SvgCanvas({
           <line x1="0" y1={(snap.yGuideCm ?? snap.yCm)! * SCALE} x2="10000" y2={(snap.yGuideCm ?? snap.yCm)! * SCALE} stroke="#ec4899" strokeWidth="1" strokeDasharray="4,4" opacity="0.6" pointerEvents="none" />
         )}
 
+        {/* Distance guides when dragging an object */}
+        <DistanceGuides appState={appState} dragState={dragState} zoom={appState.zoom} />
+
         {/* Measurement tool */}
         {measurePoints.length > 0 && (
           <>
@@ -329,5 +451,80 @@ function RoomElement({ room, appState, dragState }: { room: Room; appState: AppS
         );
       })}
     </React.Fragment>
+  );
+}
+
+// Distance guides component - shows distances to walls when dragging objects
+function DistanceGuides({ appState, dragState, zoom }: { appState: AppState; dragState: ExtendedDragState | null; zoom: number }) {
+  // Only show when dragging a placed object
+  if (!dragState || dragState.targetType !== 'placed') return null;
+  
+  const placed = (appState.placedObjects ?? []).find(p => p.id === dragState.roomId);
+  if (!placed) return null;
+  
+  const def = appState.objectDefs?.find(d => d.id === placed.defId);
+  if (!def) return null;
+  
+  const room = appState.rooms.find(r => r.id === placed.roomId);
+  if (!room) return null;
+  
+  const guides = calculateDistanceGuides(placed, def, room, appState);
+  
+  // Scale factor - viewBox is 10000, so we need larger values
+  // Multiply by ~10 to match HTML overlay label sizes
+  const s = 10 / zoom;
+  
+  return (
+    <g pointerEvents="none">
+      {guides.map((guide, i) => (
+        <React.Fragment key={`${guide.direction}-${i}`}>
+          {/* Main distance line */}
+          <line
+            x1={guide.lineX1}
+            y1={guide.lineY1}
+            x2={guide.lineX2}
+            y2={guide.lineY2}
+            stroke="#ea580c"
+            strokeWidth={2 * s}
+          />
+          {/* End caps */}
+          {guide.direction === 'left' || guide.direction === 'right' ? (
+            <>
+              <line x1={guide.lineX1} y1={guide.lineY1 - 10 * s} x2={guide.lineX1} y2={guide.lineY1 + 10 * s} stroke="#ea580c" strokeWidth={2 * s} />
+              <line x1={guide.lineX2} y1={guide.lineY2 - 10 * s} x2={guide.lineX2} y2={guide.lineY2 + 10 * s} stroke="#ea580c" strokeWidth={2 * s} />
+            </>
+          ) : (
+            <>
+              <line x1={guide.lineX1 - 10 * s} y1={guide.lineY1} x2={guide.lineX1 + 10 * s} y2={guide.lineY1} stroke="#ea580c" strokeWidth={2 * s} />
+              <line x1={guide.lineX2 - 10 * s} y1={guide.lineY2} x2={guide.lineX2 + 10 * s} y2={guide.lineY2} stroke="#ea580c" strokeWidth={2 * s} />
+            </>
+          )}
+          {/* Label background - same style as room/object labels */}
+          <rect
+            x={guide.labelX - 32 * s}
+            y={guide.labelY - 12 * s}
+            width={64 * s}
+            height={24 * s}
+            rx={4 * s}
+            fill="#fff"
+            fillOpacity={0.95}
+            stroke="#ea580c"
+            strokeWidth={1 * s}
+          />
+          {/* Label text - 13px like room/object labels */}
+          <text
+            x={guide.labelX}
+            y={guide.labelY + 5 * s}
+            textAnchor="middle"
+            fontSize={13 * s}
+            fill="#ea580c"
+            fontWeight="500"
+            style={{ fontFamily: 'system-ui, sans-serif' }}
+          >
+            {guide.distanceCm.toFixed(0)} cm
+          </text>
+        </React.Fragment>
+      ))}
+    </g>
   );
 }

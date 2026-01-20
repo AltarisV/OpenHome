@@ -185,6 +185,32 @@ export function updatePlacedObjectRotation(state: AppState, placedId: string, ro
 }
 
 /**
+ * Nudge the selected object by a delta amount (with automatic room detection)
+ */
+export function nudgeSelectedObject(state: AppState, dxCm: number, dyCm: number): AppState {
+  if (!state.selectedObjectId) return state;
+  
+  const placed = (state.placedObjects ?? []).find(p => p.id === state.selectedObjectId);
+  if (!placed) return state;
+  
+  const objectDef = state.objectDefs?.find(d => d.id === placed.defId);
+  const newX = placed.xCm + dxCm;
+  const newY = placed.yCm + dyCm;
+  
+  // Find room at new position
+  const newRoomId = findRoomAtPosition(state, newX, newY, objectDef?.widthCm ?? 0, objectDef?.heightCm ?? 0);
+  
+  return {
+    ...state,
+    placedObjects: (state.placedObjects ?? []).map((p) => 
+      p.id === state.selectedObjectId 
+        ? { ...p, xCm: newX, yCm: newY, roomId: newRoomId ?? p.roomId } 
+        : p
+    ),
+  };
+}
+
+/**
  * Update the room that a placed object belongs to
  */
 export function updatePlacedObjectRoom(state: AppState, placedId: string, roomId: string): AppState {
