@@ -169,7 +169,7 @@ export function renderSvgContent(
 
   // Render all rooms
   for (const room of state.rooms) {
-    const isSelected = room.id === state.selectedRoomId;
+    const isSelected = state.selectedRoomIds.includes(room.id);
     content += renderRoom(room, isSelected, false);
   }
 

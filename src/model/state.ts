@@ -184,6 +184,66 @@ export function updatePlacedObjectRotation(state: AppState, placedId: string, ro
   };
 }
 
+/**
+ * Update the room that a placed object belongs to
+ */
+export function updatePlacedObjectRoom(state: AppState, placedId: string, roomId: string): AppState {
+  return {
+    ...state,
+    placedObjects: (state.placedObjects ?? []).map((p) => (p.id === placedId ? { ...p, roomId } : p)),
+  };
+}
+
+/**
+ * Find which room contains the given point (object center)
+ * Returns the room id or null if no room contains the point
+ */
+export function findRoomAtPosition(state: AppState, xCm: number, yCm: number, objectWidthCm: number = 0, objectHeightCm: number = 0): string | null {
+  // Check from the center of the object
+  const centerX = xCm + objectWidthCm / 2;
+  const centerY = yCm + objectHeightCm / 2;
+  
+  for (const room of state.rooms) {
+    if (
+      centerX >= room.xCm &&
+      centerX <= room.xCm + room.widthCm &&
+      centerY >= room.yCm &&
+      centerY <= room.yCm + room.heightCm
+    ) {
+      return room.id;
+    }
+  }
+  return null;
+}
+
+/**
+ * Update placed object position and automatically detect & update its room
+ */
+export function updatePlacedObjectPositionWithRoomDetection(
+  state: AppState,
+  placedId: string,
+  xCm: number,
+  yCm: number
+): AppState {
+  const placed = (state.placedObjects ?? []).find((p) => p.id === placedId);
+  if (!placed) return state;
+  
+  const def = (state.objectDefs ?? []).find((d) => d.id === placed.defId);
+  if (!def) return state;
+  
+  // Find which room the object is now in
+  const newRoomId = findRoomAtPosition(state, xCm, yCm, def.widthCm, def.heightCm);
+  
+  return {
+    ...state,
+    placedObjects: (state.placedObjects ?? []).map((p) =>
+      p.id === placedId
+        ? { ...p, xCm, yCm, roomId: newRoomId ?? p.roomId }
+        : p
+    ),
+  };
+}
+
 export function deletePlacedObject(state: AppState, placedId: string): AppState {
   return {
     ...state,
