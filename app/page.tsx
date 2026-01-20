@@ -29,6 +29,10 @@ export default function RoomEditor() {
   const [toolMode, setToolMode] = useState<ToolMode>('select');
   const [measurePoints, setMeasurePoints] = useState<MeasurePoint[]>([]);
   
+  // Mobile panel visibility
+  const [leftPanelOpen, setLeftPanelOpen] = useState(false);
+  const [rightPanelOpen, setRightPanelOpen] = useState(false);
+  
   // Drag state
   const [dragState, setDragState] = useState<ExtendedDragState | null>(null);
   const [currentSnapResult, setCurrentSnapResult] = useState<Snap.SnapResult | null>(null);
@@ -262,6 +266,8 @@ export default function RoomEditor() {
         onSelectObject={(objectId) => updateState(State.selectObject(appState, objectId), false)}
         onDuplicatePlaced={handleDuplicatePlaced}
         onRotatePlaced={(objectId, rotation) => updateState(State.updatePlacedObjectRotation(appState, objectId, rotation))}
+        isMobileOpen={leftPanelOpen}
+        onClose={() => setLeftPanelOpen(false)}
       />
 
       {/* Center Panel: SVG Editor */}
@@ -275,6 +281,8 @@ export default function RoomEditor() {
           onResetView={() => updateState(State.updateViewport(appState, 50, 50, 1), false)}
           onSelectTool={() => { setToolMode('select'); setMeasurePoints([]); }}
           onMeasureTool={() => { setToolMode('measure'); setMeasurePoints([]); }}
+          onToggleLeftPanel={() => setLeftPanelOpen(prev => !prev)}
+          onToggleRightPanel={() => setRightPanelOpen(prev => !prev)}
         />
 
         <div className="relative flex-1 w-full h-full">
@@ -332,6 +340,8 @@ export default function RoomEditor() {
         onUpdatePlacedObjectRotation={(objectId, rotation) => updateState(State.updatePlacedObjectRotation(appState, objectId, rotation))}
         onUpdatePlacedObjectRoom={(objectId, roomId) => updateState(State.updatePlacedObjectRoom(appState, objectId, roomId))}
         onUpdatePlacedObjectSize={(objectId, width, height) => updateState(State.updatePlacedObjectSize(appState, objectId, width, height))}
+        isMobileOpen={rightPanelOpen}
+        onClose={() => setRightPanelOpen(false)}
       />
 
       <KeyboardShortcutsHelp />

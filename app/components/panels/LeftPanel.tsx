@@ -20,6 +20,8 @@ interface LeftPanelProps {
   onSelectObject: (objectId: string) => void;
   onDuplicatePlaced: (objectId: string) => void;
   onRotatePlaced: (objectId: string, rotation: number) => void;
+  isMobileOpen?: boolean;
+  onClose?: () => void;
 }
 
 export default function LeftPanel({
@@ -37,18 +39,43 @@ export default function LeftPanel({
   onSelectObject,
   onDuplicatePlaced,
   onRotatePlaced,
+  isMobileOpen,
+  onClose,
 }: LeftPanelProps) {
   return (
-    <div className="w-72 bg-white border-r border-slate-200 overflow-y-auto flex flex-col shadow-sm">
-      {/* Header */}
-      <div className="p-5 border-b border-slate-100">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
-            <span className="text-white text-sm font-bold">O</span>
+    <>
+      {/* Mobile backdrop */}
+      {isMobileOpen && (
+        <div 
+          className="lg:hidden fixed inset-0 bg-black/30 z-40 transition-opacity"
+          onClick={onClose}
+        />
+      )}
+      <div className={`
+        w-72 bg-white border-r border-slate-200 overflow-y-auto flex flex-col shadow-sm
+        fixed lg:relative inset-y-0 left-0 z-50 lg:z-auto
+        transform transition-transform duration-300 ease-in-out
+        ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+      `}>
+        {/* Header */}
+        <div className="p-5 border-b border-slate-100">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+              <span className="text-white text-sm font-bold">O</span>
+            </div>
+            <h1 className="text-xl font-bold text-slate-800 flex-1">OpenHome</h1>
+            {onClose && (
+              <button
+                onClick={onClose}
+                className="lg:hidden w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-500 transition-all"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
+              </button>
+            )}
           </div>
-          <h1 className="text-xl font-bold text-slate-800">OpenHome</h1>
         </div>
-      </div>
 
       <div className="flex-1 overflow-y-auto p-5">
         {/* Undo/Redo */}
@@ -91,7 +118,7 @@ export default function LeftPanel({
         <div className="mb-6 pb-6 border-b border-slate-100 last:border-b-0 last:mb-0 last:pb-0">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">Settings</h2>
           <label className="block text-sm font-medium text-slate-600 mb-2">
-            Wanddicke (cm)
+            Wall thickness (cm)
           </label>
           <input
             type="number"
@@ -242,5 +269,6 @@ export default function LeftPanel({
         </div>
       </div>
     </div>
+    </>
   );
 }

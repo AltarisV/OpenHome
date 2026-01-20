@@ -20,6 +20,8 @@ interface RightPanelProps {
   onUpdatePlacedObjectRotation: (objectId: string, rotation: number) => void;
   onUpdatePlacedObjectRoom: (objectId: string, roomId: string) => void;
   onUpdatePlacedObjectSize: (objectId: string, widthCm: number, heightCm: number) => void;
+  isMobileOpen?: boolean;
+  onClose?: () => void;
 }
 
 export default function RightPanel({
@@ -37,12 +39,39 @@ export default function RightPanel({
   onUpdatePlacedObjectRotation,
   onUpdatePlacedObjectRoom,
   onUpdatePlacedObjectSize,
+  isMobileOpen,
+  onClose,
 }: RightPanelProps) {
   return (
-    <div className="w-80 bg-white border-l border-slate-200 overflow-y-auto shadow-sm flex flex-col">
-      <div className="p-5 border-b border-slate-100">
-        <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Properties</h2>
-      </div>
+    <>
+      {/* Mobile backdrop */}
+      {isMobileOpen && (
+        <div 
+          className="lg:hidden fixed inset-0 bg-black/30 z-40 transition-opacity"
+          onClick={onClose}
+        />
+      )}
+      <div className={`
+        w-80 bg-white border-l border-slate-200 overflow-y-auto shadow-sm flex flex-col
+        fixed lg:relative inset-y-0 right-0 z-50 lg:z-auto
+        transform transition-transform duration-300 ease-in-out
+        ${isMobileOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}
+      `}>
+        <div className="p-5 border-b border-slate-100">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Properties</h2>
+            {onClose && (
+              <button
+                onClick={onClose}
+                className="lg:hidden w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-500 transition-all"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M18 6L6 18M6 6l12 12"/>
+                </svg>
+              </button>
+            )}
+          </div>
+        </div>
       
       <div className="flex-1 overflow-y-auto p-5">
       {appState.selectedRoomIds.length > 1 ? (
@@ -113,6 +142,7 @@ export default function RightPanel({
       )}
       </div>
     </div>
+    </>
   );
 }
 
