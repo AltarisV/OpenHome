@@ -206,6 +206,10 @@ export function useSvgPointerHandlers({
       const def = (appState.objectDefs ?? []).find((d) => d.id === placed.defId);
       if (!def) return;
 
+      // Use individual size if set, otherwise fall back to ObjectDef size
+      const objWidth = placed.widthCm ?? def.widthCm;
+      const objHeight = placed.heightCm ?? def.heightCm;
+
       const getVisualBounds = (objXCm: number, objYCm: number, origW: number, origH: number, rotationDeg: number) => {
         const isRotated = rotationDeg % 180 !== 0;
         if (!isRotated) return { x: objXCm, y: objYCm, w: origW, h: origH };
@@ -229,7 +233,7 @@ export function useSvgPointerHandlers({
       const currentRotation = placed.rotationDeg ?? 0;
       
       // Find the current room the object is being dragged over (for snapping)
-      const currentRoomId = State.findRoomAtPosition(appState, xCm, yCm, def.widthCm, def.heightCm);
+      const currentRoomId = State.findRoomAtPosition(appState, xCm, yCm, objWidth, objHeight);
       const room = currentRoomId ? appState.rooms.find((r) => r.id === currentRoomId) : appState.rooms.find((r) => r.id === placed.roomId);
       
       // If object is over a room, use room-based snapping
@@ -239,25 +243,28 @@ export function useSvgPointerHandlers({
           .map((p) => {
             const objDef = (appState.objectDefs ?? []).find((d) => d.id === p.defId);
             if (!objDef) return null;
-            const visual = getVisualBounds(p.xCm, p.yCm, objDef.widthCm, objDef.heightCm, p.rotationDeg ?? 0);
+            // Use individual size if set, otherwise fall back to ObjectDef size
+            const pWidth = p.widthCm ?? objDef.widthCm;
+            const pHeight = p.heightCm ?? objDef.heightCm;
+            const visual = getVisualBounds(p.xCm, p.yCm, pWidth, pHeight, p.rotationDeg ?? 0);
             return { id: p.id, xCm: visual.x, yCm: visual.y, widthCm: visual.w, heightCm: visual.h };
           })
           .filter((p): p is Snap.PlacedObjectForSnap => p !== null);
 
-        const visualBounds = getVisualBounds(xCm, yCm, def.widthCm, def.heightCm, currentRotation);
+        const visualBounds = getVisualBounds(xCm, yCm, objWidth, objHeight, currentRotation);
 
         const snapRes = Snap.calculatePlacedObjectSnap(
           visualBounds.w, visualBounds.h, room, visualBounds.x, visualBounds.y,
           Snap.OBJECT_SNAP_TOLERANCE_CM, otherObjectsInRoom, placed.id
         );
         
-        const storageCoords = visualToStorage(snapRes.xCm, snapRes.yCm, def.widthCm, def.heightCm, currentRotation);
+        const storageCoords = visualToStorage(snapRes.xCm, snapRes.yCm, objWidth, objHeight, currentRotation);
         setCurrentSnapResult(snapRes);
         // Use position with room detection to auto-assign room
         updateState(State.updatePlacedObjectPositionWithRoomDetection(appState, placed.id, storageCoords.xCm, storageCoords.yCm), false);
       } else {
         // No room under object - just move freely
-        const storageCoords = visualToStorage(xCm, yCm, def.widthCm, def.heightCm, currentRotation);
+        const storageCoords = visualToStorage(xCm, yCm, objWidth, objHeight, currentRotation);
         setCurrentSnapResult(null);
         updateState(State.updatePlacedObjectPositionWithRoomDetection(appState, placed.id, storageCoords.xCm, storageCoords.yCm), false);
       }

@@ -19,6 +19,7 @@ interface RightPanelProps {
   onUpdatePlacedObjectPosition: (objectId: string, x: number, y: number) => void;
   onUpdatePlacedObjectRotation: (objectId: string, rotation: number) => void;
   onUpdatePlacedObjectRoom: (objectId: string, roomId: string) => void;
+  onUpdatePlacedObjectSize: (objectId: string, widthCm: number, heightCm: number) => void;
 }
 
 export default function RightPanel({
@@ -35,6 +36,7 @@ export default function RightPanel({
   onUpdatePlacedObjectPosition,
   onUpdatePlacedObjectRotation,
   onUpdatePlacedObjectRoom,
+  onUpdatePlacedObjectSize,
 }: RightPanelProps) {
   return (
     <div className="w-80 bg-white border-l border-slate-200 overflow-y-auto shadow-sm flex flex-col">
@@ -84,6 +86,7 @@ export default function RightPanel({
           onUpdatePosition={onUpdatePlacedObjectPosition}
           onUpdateRotation={onUpdatePlacedObjectRotation}
           onUpdateRoom={onUpdatePlacedObjectRoom}
+          onUpdateSize={onUpdatePlacedObjectSize}
         />
       ) : selectedRoom ? (
         <>
@@ -120,18 +123,24 @@ function SelectedObjectPanel({
   onUpdatePosition,
   onUpdateRotation,
   onUpdateRoom,
+  onUpdateSize,
 }: {
   appState: AppState;
   onDeleteSelected: () => void;
   onUpdatePosition: (objectId: string, x: number, y: number) => void;
   onUpdateRotation: (objectId: string, rotation: number) => void;
   onUpdateRoom: (objectId: string, roomId: string) => void;
+  onUpdateSize: (objectId: string, widthCm: number, heightCm: number) => void;
 }) {
   const selectedObject = (appState.placedObjects ?? []).find(p => p.id === appState.selectedObjectId);
   const objectDef = selectedObject ? appState.objectDefs?.find(d => d.id === selectedObject.defId) : null;
   const containingRoom = selectedObject ? appState.rooms.find(r => r.id === selectedObject.roomId) : null;
   
   if (!selectedObject || !objectDef) return null;
+  
+  // Get effective size (override or default from ObjectDef)
+  const effectiveWidth = selectedObject.widthCm ?? objectDef.widthCm;
+  const effectiveHeight = selectedObject.heightCm ?? objectDef.heightCm;
   
   return (
     <div>
@@ -141,11 +150,45 @@ function SelectedObjectPanel({
         </div>
         <div>
           <h3 className="font-semibold text-slate-800">{objectDef.name}</h3>
-          <p className="text-xs text-slate-400">{objectDef.widthCm} × {objectDef.heightCm} cm</p>
+          <p className="text-xs text-slate-400">{effectiveWidth} × {effectiveHeight} cm</p>
         </div>
       </div>
       
       <div className="space-y-4">
+        
+        {/* Editable Size */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-sm font-medium text-slate-600 mb-1">Breite (cm)</label>
+            <input
+              type="number"
+              value={effectiveWidth}
+              min={1}
+              onChange={(e) => {
+                const val = parseFloat(e.target.value);
+                if (!isNaN(val) && val > 0) {
+                  onUpdateSize(selectedObject.id, val, effectiveHeight);
+                }
+              }}
+              className="input-field"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-600 mb-1">Höhe (cm)</label>
+            <input
+              type="number"
+              value={effectiveHeight}
+              min={1}
+              onChange={(e) => {
+                const val = parseFloat(e.target.value);
+                if (!isNaN(val) && val > 0) {
+                  onUpdateSize(selectedObject.id, effectiveWidth, val);
+                }
+              }}
+              className="input-field"
+            />
+          </div>
+        </div>
         
         {/* Editable Position */}
         <div className="grid grid-cols-2 gap-3">

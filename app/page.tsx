@@ -331,6 +331,7 @@ export default function RoomEditor() {
         onUpdatePlacedObjectPosition={(objectId, x, y) => updateState(State.updatePlacedObjectPosition(appState, objectId, x, y))}
         onUpdatePlacedObjectRotation={(objectId, rotation) => updateState(State.updatePlacedObjectRotation(appState, objectId, rotation))}
         onUpdatePlacedObjectRoom={(objectId, roomId) => updateState(State.updatePlacedObjectRoom(appState, objectId, roomId))}
+        onUpdatePlacedObjectSize={(objectId, width, height) => updateState(State.updatePlacedObjectSize(appState, objectId, width, height))}
       />
 
       <KeyboardShortcutsHelp />

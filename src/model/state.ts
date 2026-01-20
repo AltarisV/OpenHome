@@ -185,6 +185,32 @@ export function updatePlacedObjectRotation(state: AppState, placedId: string, ro
 }
 
 /**
+ * Update the size of a placed object
+ */
+export function updatePlacedObjectSize(state: AppState, placedId: string, widthCm: number, heightCm: number): AppState {
+  return {
+    ...state,
+    placedObjects: (state.placedObjects ?? []).map((p) => (p.id === placedId ? { ...p, widthCm, heightCm } : p)),
+  };
+}
+
+/**
+ * Get the effective size of a placed object (uses override or falls back to ObjectDef)
+ */
+export function getPlacedObjectSize(state: AppState, placedId: string): { widthCm: number; heightCm: number } | null {
+  const placed = (state.placedObjects ?? []).find(p => p.id === placedId);
+  if (!placed) return null;
+  
+  const def = state.objectDefs?.find(d => d.id === placed.defId);
+  if (!def) return null;
+  
+  return {
+    widthCm: placed.widthCm ?? def.widthCm,
+    heightCm: placed.heightCm ?? def.heightCm,
+  };
+}
+
+/**
  * Nudge the selected object by a delta amount (with automatic room detection)
  */
 export function nudgeSelectedObject(state: AppState, dxCm: number, dyCm: number): AppState {

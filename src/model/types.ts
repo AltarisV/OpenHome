@@ -52,6 +52,8 @@ export interface PlacedObject {
   xCm: number; // position in cm (absolute, same coordinate space as rooms)
   yCm: number;
   rotationDeg?: number;
+  widthCm?: number; // optional size override (defaults to ObjectDef size)
+  heightCm?: number;
 }
 
 export interface AppState {

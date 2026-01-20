@@ -63,10 +63,14 @@ function calculateDistanceGuides(
   const roomRightCm = room.xCm + room.widthCm;
   const roomBottomCm = room.yCm + room.heightCm;
   
+  // Use individual size if set, otherwise fall back to ObjectDef size
+  const baseWidth = placed.widthCm ?? def.widthCm;
+  const baseHeight = placed.heightCm ?? def.heightCm;
+  
   // Calculate actual bounding box after rotation
   // The SVG rotation is around the center of the ORIGINAL (unrotated) rect
-  const originalCenterX = placed.xCm + def.widthCm / 2;
-  const originalCenterY = placed.yCm + def.heightCm / 2;
+  const originalCenterX = placed.xCm + baseWidth / 2;
+  const originalCenterY = placed.yCm + baseHeight / 2;
   
   const rotation = ((placed.rotationDeg ?? 0) % 360 + 360) % 360; // Normalize to 0-359
   const isRotated90or270 = rotation === 90 || rotation === 270;
@@ -77,11 +81,11 @@ function calculateDistanceGuides(
   
   if (isRotated90or270) {
     // Width and height swap
-    boundingWidth = def.heightCm;
-    boundingHeight = def.widthCm;
+    boundingWidth = baseHeight;
+    boundingHeight = baseWidth;
   } else {
-    boundingWidth = def.widthCm;
-    boundingHeight = def.heightCm;
+    boundingWidth = baseWidth;
+    boundingHeight = baseHeight;
   }
   
   // The center stays the same, but the bounding box corners change
@@ -438,8 +442,9 @@ function RoomElement({ room, appState, dragState }: { room: Room; appState: AppS
         if (!def) return null;
         const ox = p.xCm * SCALE;
         const oy = p.yCm * SCALE;
-        const ow = def.widthCm * SCALE;
-        const oh = def.heightCm * SCALE;
+        // Use individual size if set, otherwise fall back to ObjectDef size
+        const ow = (p.widthCm ?? def.widthCm) * SCALE;
+        const oh = (p.heightCm ?? def.heightCm) * SCALE;
         const draggingPlaced = dragState?.roomId === p.id && dragState?.targetType === 'placed';
         const isSelectedObject = appState.selectedObjectId === p.id;
         const rotation = p.rotationDeg ?? 0;
